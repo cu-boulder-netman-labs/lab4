@@ -5,7 +5,10 @@
     <title>My Flask App</title>
 </head>
 <body>
-    <h1>Get config</h1>
+    <h1>Config files saved</h1>
+    {% for file in files %}
+        <li>{{ file }}</li>
+    {% endfor %}
     <p><a href="/">Go home</a></p>
 </body>
 </html>
