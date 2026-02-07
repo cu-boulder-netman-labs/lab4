@@ -6,8 +6,23 @@
 </head>
 <body>
     <h1>Welcome to My Flask App!</h1>
-    <p><a href="/get_config">Get config</a></p>
+    <button>hello</button>
     <p><a href="/ospf_config">OSPF config</a></p>
     <p><a href="/diff_config">Diff config</a></p>
+
+    <h2>Device Status</h2>
+    <table border="1">
+        <tr>
+            <th>Device</th>
+            <th>Status</th>
+        </tr>
+
+        {% for device, status in devices.items() %}
+        <tr>
+            <td>{{ device }}</td>
+            <td>{{ status }}</td>
+        </tr>
+        {% endfor %}
+    </table>
 </body>
 </html>
