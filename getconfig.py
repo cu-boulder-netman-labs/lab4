@@ -27,9 +27,9 @@ def process_config(device):
             # Save in a file based on hostname and ISO8601 format
             hostname = dev.get_facts()['hostname']
             ts = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
-            fname = f"configs/{hostname}_{ts}.cfg"
+            fname = f"{hostname}_{ts}.txt"
 
-            with open(fname, "w") as f:
+            with open("configs/" + fname, "w") as f:
                 f.write(cfg["running"])
 
         return fname

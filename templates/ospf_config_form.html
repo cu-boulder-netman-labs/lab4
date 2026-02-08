@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>OSPF Configuration - Router {{ router }}</title>
+</head>
+<body>
+    <div>
+        <h2>Router {{ router }} - OSPF Configuration</h2>
+        
+        <form method="POST">
+            <h3>SSH & OSPF Settings</h3>
+            {% for field in fields %}
+            <div>
+                <label>
+                    {{ field.label }}{% if field.required %} *{% endif %}
+                </label>
+                <input 
+                    type="{{ field.type }}" 
+                    name="{{ field.name }}" 
+                    {% if field.placeholder %}placeholder="{{ field.placeholder }}"{% endif %}
+                    {% if field.value %}value="{{ field.value }}"{% endif %}
+                    {% if field.required %}required{% endif %}
+                >
+            </div>
+            {% endfor %}
+            
+            {% for interface in interfaces %}
+            <div>
+                <h3>Interface {{ interface.number }}{% if not interface.fields[0].required %} (Optional){% endif %}</h3>
+                {% for field in interface.fields %}
+                <div>
+                    <label>
+                        {{ field.label }}{% if field.required %} *{% endif %}
+                    </label>
+                    <input 
+                        type="{{ field.type }}" 
+                        name="{{ field.name }}" 
+                        {% if field.placeholder %}placeholder="{{ field.placeholder }}"{% endif %}
+                        {% if field.value %}value="{{ field.value }}"{% endif %}
+                        {% if field.required %}required{% endif %}
+                    >
+                </div>
+                {% endfor %}
+            </div>
+            {% endfor %}
+            
+            {% if show_load_balancing %}
+            <div>
+                <h3>Load Balancing</h3>
+                <div>
+                    <label>
+                        <input type="checkbox" name="load_balancing" checked>
+                        Enable OSPF Equal-Cost Load Balancing
+                    </label>
+                    <p>This router will balance traffic across multiple equal-cost paths.</p>
+                </div>
+            </div>
+            {% endif %}
+            
+            <button type="submit">
+                {% if next_router %}
+                    Next: Configure {{ next_router }}
+                {% else %}
+                    Finish and Apply OSPF Configuration
+                {% endif %}
+            </button>
+        </form>
+    </div>
+</body>
+</html>
