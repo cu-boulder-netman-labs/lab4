@@ -59,21 +59,16 @@ def create_app():
         if not configs or len(configs) < 4:
             return "Error: Not all routers configured. Please start over.", 400
 
-        ospfconfig.configure(configs)
-        
-        # Step 1: Validate IPs and display interface table
-        ip_table = validate_and_display_ips(configs)
-        
-        # Step 2: Configure OSPF using NAPALM
-        ospf_results = configure_ospf_napalm(configs)
+        ospfconfig.configure_ospf(configs)
         
         # Step 3: Ping all loopbacks from R1
-        ping_results = ping_loopbacks_from_r1(configs)
+        # ping_results = ping_loopbacks_from_r1(configs)
         
-        return render_template('ospf_results.html', 
-                             ip_table=ip_table,
-                             ospf_results=ospf_results,
-                             ping_results=ping_results)
+        # return render_template('ospf_results.html', 
+        #                      ip_table=ip_table,
+        #                      ospf_results=ospf_results,
+        #                      ping_results=ping_results)
+        return render_template("index.html")
 
     @app.route("/diff_config")
     def diff_config():
@@ -83,6 +78,8 @@ def create_app():
 
 if __name__ == "__main__":
     hosts = sshInfo.load_ssh_info("config/sshInfo.json")
+
+    ospfconfig.init_db()
 
     app = create_app()
     app.run(debug=True)

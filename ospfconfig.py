@@ -1,4 +1,7 @@
+from napalm import get_network_driver
 import sqlite3
+from prettytable import PrettyTable
+
 from tools import connectivity, validateIP
 
 def init_db():
@@ -218,9 +221,137 @@ def get_next_router(current):
     except ValueError:
         return None
 
-def configure(configs):
+def configure_ospf(configs):
     """Configure OSPF on the routers"""
+    
+    # Create PrettyTable for IP validation results
+    ip_table = PrettyTable()
+    ip_table.field_names = ["Router", "Interface", "IP Address", "Subnet Mask", "Valid", "Reachable"]
+    
+    # First pass: Validate all IPs and populate table
+    print("\n" + "="*80)
+    print("VALIDATING IP ADDRESSES AND CHECKING REACHABILITY")
+    print("="*80 + "\n")
+    
+    all_reachable = True
+    
     for config in configs:
-        # Validate IPs and reachability
-        validateIP.
-
+        router = config['router']
+        
+        # Validate and check Management IP
+        mgmt_valid = validateIP.validate_ip(config['ip_address'])
+        reach = connectivity.check_reachability([config['ip_address']])
+        mgmt_reachable = reach[config['ip_address']]
+        
+        ip_table.add_row([
+            router,
+            "Management",
+            config['ip_address'],
+            "N/A",
+            "✓" if mgmt_valid else "✗",
+            "✓" if mgmt_reachable else "✗"
+        ])
+        
+        if not mgmt_reachable:
+            all_reachable = False
+        
+        # Validate Loopback IP
+        loopback_valid = validateIP.validate_ip(config['loopback_ip'])
+        ip_table.add_row([
+            router,
+            "Loopback0",
+            config['loopback_ip'],
+            config['loopback_mask'],
+            "✓" if loopback_valid else "✗",
+            "N/A"
+        ])
+        
+        # Validate Interface 1 IP
+        int1_valid = validateIP.validate_ip(config['interface1_ip'])
+        ip_table.add_row([
+            router,
+            config['interface1'],
+            config['interface1_ip'],
+            config['interface1_mask'],
+            "✓" if int1_valid else "✗",
+            "N/A"
+        ])
+        
+        # Validate Interface 2 IP (if exists)
+        if config['interface2'] and config['interface2_ip']:
+            int2_valid = validateIP.validate_ip(config['interface2_ip'])
+            ip_table.add_row([
+                router,
+                config['interface2'],
+                config['interface2_ip'],
+                config['interface2_mask'],
+                "✓" if int2_valid else "✗",
+                "N/A"
+            ])
+    
+    # Print the table
+    print(ip_table)
+    print("\n")
+    
+    # Check if all management IPs are reachable before proceeding
+    if not all_reachable:
+        print("ERROR: Not all routers are reachable. Cannot proceed with OSPF configuration.")
+        return False
+    
+    # Second pass: Configure OSPF on each router
+    print("="*80)
+    print("CONFIGURING OSPF ON ROUTERS")
+    print("="*80 + "\n")
+    
+    for config in configs:
+        router = config['router']
+        print(f"Configuring {router}...")
+        
+        try:
+            # Configure with napalm
+            driver = get_network_driver("ios")
+            device = driver(
+                hostname=config['ip_address'],
+                username=config['username'],
+                password=config['password']
+            )
+            device.open()
+            
+            # Build OSPF configuration
+            ospf_config = (
+                f"router ospf {config['ospf_process_id']}\n"
+                f" router-id {config['router_id']}\n"
+                f" network {config['loopback_ip']} 0.0.0.0 area {config['interface1_area']}\n"
+                f" network {config['interface1_ip']} {config['interface1_mask']} area {config['interface1_area']}\n"
+            )
+            
+            # Add second interface if it exists
+            if config['interface2'] and config['interface2_ip']:
+                ospf_config += (
+                    f" network {config['interface2_ip']} {config['interface2_mask']} "
+                    f"area {config['interface2_area']}\n"
+                )
+            
+            # Add load balancing for R2 and R4
+            if config['load_balancing']:
+                ospf_config += " maximum-paths 2\n"
+            
+            print(f"  Loading configuration...")
+            device.load_merge_candidate(config=ospf_config)
+            
+            print(f"  Committing configuration...")
+            device.commit_config()
+            
+            print(f"  ✓ {router} configured successfully\n")
+            
+            device.close()
+            
+        except Exception as e:
+            print(f"  ✗ Error configuring {router}: {str(e)}\n")
+            return False
+    
+    print("="*80)
+    print("OSPF CONFIGURATION COMPLETE")
+    print("="*80 + "\n")
+    
+    return True
