@@ -1,0 +1,5 @@
+OSPF Configuration Results
+Ping Results (from R1)
+
+✗ Error: Pattern not detected: 'R1\\#' in output. Things you might try to fix this: 1. Explicitly set your pattern using the expect_string argument. 2. Increase the read_timeout to a larger value. You can also look at the Netmiko session_log or debug log for more information.
+

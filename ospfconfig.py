@@ -1,8 +1,14 @@
 from napalm import get_network_driver
 import sqlite3
 from prettytable import PrettyTable
+from concurrent.futures import ThreadPoolExecutor, as_completed
+import threading
+import time
 
 from tools import connectivity, validateIP
+
+# Thread-safe lock for printing
+print_lock = threading.Lock()
 
 def init_db():
     """Initialize SQLite database"""
@@ -34,7 +40,7 @@ def save_router_config(router, form_data):
         c = conn.cursor()
         
         c.execute('''INSERT OR REPLACE INTO router_configs VALUES 
-                    (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''',
+                    (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''',
                 (router,
                 form_data.get('hostname'),
                 form_data.get('ip_address'),
@@ -215,6 +221,100 @@ def get_next_router(current):
     except ValueError:
         return None
 
+def ping_loopbacks_from_r1(configs):
+    """Ping all loopback IPs from R1"""
+    
+    r1_config = None
+    for config in configs:
+        if config['router'] == 'R1':
+            r1_config = config
+            break
+    
+    if not r1_config:
+        return {'success': False, 'results': [], 'error': 'R1 not found'}
+    
+    results = []
+    
+    try:
+        driver = get_network_driver("ios")
+        device = driver(
+            hostname=r1_config['ip_address'],
+            username=r1_config['username'],
+            password=r1_config['password'],
+            optional_args={'read_timeout_override': 60}
+        )
+        device.open()
+        
+        for config in configs:
+            if config['router'] != 'R1':
+                ping_cmd = f"ping {config['loopback_ip']} repeat 5"
+                output = device.cli([ping_cmd])[ping_cmd]
+                success = "100 percent" in output
+                
+                results.append({
+                    'router': config['router'],
+                    'ip': config['loopback_ip'],
+                    'status': 'Success' if success else 'Failed'
+                })
+        
+        device.close()
+        return {'success': True, 'results': results}
+        
+    except Exception as e:
+        return {'success': False, 'results': [], 'error': str(e)}
+
+def configure_single_router(config):
+    """Configure OSPF on a single router"""
+    router = config['router']
+    
+    try:
+        with print_lock:
+            print(f"Configuring {router}...")
+        
+        # Configure with napalm
+        driver = get_network_driver("ios")
+        device = driver(
+            hostname=config['ip_address'],
+            username=config['username'],
+            password=config['password']
+        )
+        device.open()
+        
+        # Build OSPF configuration
+        ospf_config = (
+            f"router ospf {config['ospf_process_id']}\n"
+            f" router-id {config['router_id']}\n"
+            f" network {config['loopback_ip']} 0.0.0.0 area {config['interface1_area']}\n"
+            f" network {config['interface1_ip']} {config['interface1_mask']} area {config['interface1_area']}\n"
+        )
+        
+        # Add second interface if it exists
+        if config['interface2'] and config['interface2_ip']:
+            ospf_config += (
+                f" network {config['interface2_ip']} {config['interface2_mask']} "
+                f"area {config['interface2_area']}\n"
+            )
+        
+        with print_lock:
+            print(f"  Loading configuration for {router}...")
+        device.load_merge_candidate(config=ospf_config)
+        
+        with print_lock:
+            print(f"  Committing configuration for {router}...")
+        device.commit_config()
+        
+        device.close()
+        
+        with print_lock:
+            print(f"  ✓ {router} configured successfully\n")
+        
+        return {'router': router, 'success': True}
+        
+    except Exception as e:
+        with print_lock:
+            print(f"  ✗ Error configuring {router}: {str(e)}\n")
+        return {'router': router, 'success': False}
+
 def configure_ospf(configs):
     """Configure OSPF on the routers"""
     
@@ -292,56 +392,27 @@ def configure_ospf(configs):
         print("ERROR: Not all routers are reachable. Cannot proceed with OSPF configuration.")
         return False
     
-    # Second pass: Configure OSPF on each router
+    # Second pass: Configure OSPF on each router using ThreadPoolExecutor
     print("="*80)
-    print("CONFIGURING OSPF ON ROUTERS")
+    print("CONFIGURING OSPF ON ROUTERS (PARALLEL)")
     print("="*80 + "\n")
     
-    for config in configs:
-        router = config['router']
-        print(f"Configuring {router}...")
-        
-        try:
-            # Configure with napalm
-            driver = get_network_driver("ios")
-            device = driver(
-                hostname=config['ip_address'],
-                username=config['username'],
-                password=config['password']
-            )
-            device.open()
-            
-            # Build OSPF configuration
-            ospf_config = (
-                f"router ospf {config['ospf_process_id']}\n"
-                f" router-id {config['router_id']}\n"
-                f" network {config['loopback_ip']} 0.0.0.0 area {config['interface1_area']}\n"
-                f" network {config['interface1_ip']} {config['interface1_mask']} area {config['interface1_area']}\n"
-            )
-            
-            # Add second interface if it exists
-            if config['interface2'] and config['interface2_ip']:
-                ospf_config += (
-                    f" network {config['interface2_ip']} {config['interface2_mask']} "
-                    f"area {config['interface2_area']}\n"
-                )
-            
-            print(f"  Loading configuration...")
-            device.load_merge_candidate(config=ospf_config)
-            
-            print(f"  Committing configuration...")
-            device.commit_config()
-            
-            print(f"  ✓ {router} configured successfully\n")
-            
-            device.close()
-            
-        except Exception as e:
-            print(f"  ✗ Error configuring {router}: {str(e)}\n")
-            return False
+    # Use executor.map() - much simpler!
+    with ThreadPoolExecutor(max_workers=4) as executor:
+        results = list(executor.map(configure_single_router, configs))
+    
+    # Check if all succeeded
+    all_success = all(r['success'] for r in results)
+
+    if all_success:
+        # Wait for OSPF convergence
+        print("Waiting for OSPF convergence...", end="", flush=True)
+        time.sleep(60)  # Wait 30 seconds
+        print(" Done!\n")
+
     
     print("="*80)
     print("OSPF CONFIGURATION COMPLETE")
     print("="*80 + "\n")
     
-    return True
+    return all_success

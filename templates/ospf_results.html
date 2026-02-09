@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>OSPF Configuration Results</title>
+</head>
+<body>
+    <h1>OSPF Configuration Results</h1>
+    
+    <h2>Ping Results (from R1)</h2>
+    {% if ping_results.success %}
+        <table border="1">
+            <tr>
+                <th>Router</th>
+                <th>IP</th>
+                <th>Status</th>
+            </tr>
+            {% for result in ping_results.results %}
+            <tr>
+                <td>{{ result.router }}</td>
+                <td>{{ result.ip }}</td>
+                <td>{% if result.status == 'Success' %}✓ Reachable{% else %}✗ Failed{% endif %}</td>
+            </tr>
+            {% endfor %}
+        </table>
+    {% else %}
+        <p>✗ Error: {{ ping_results.error }}</p>
+    {% endif %}
+    
+    <br>
+    <a href="/">Back to Home</a>
+</body>
+</html>
