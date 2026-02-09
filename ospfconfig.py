@@ -25,17 +25,13 @@ def init_db():
                     interface2 TEXT,
                     interface2_ip TEXT,
                     interface2_mask TEXT,
-                    interface2_area TEXT,
-                    load_balancing BOOLEAN)''')
+                    interface2_area TEXT)''')
         conn.commit()
 
 def save_router_config(router, form_data):
     """Save router configuration to database"""
     with sqlite3.connect('ospf_config.db') as conn:
         c = conn.cursor()
-        
-        # Check if load balancing should be enabled (only for R2 and R4)
-        load_balancing = 1 if (router in ['R2', 'R4'] and form_data.get('load_balancing') == 'on') else 0
         
         c.execute('''INSERT OR REPLACE INTO router_configs VALUES 
                     (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''',
@@ -55,8 +51,7 @@ def save_router_config(router, form_data):
                 form_data.get('interface2', ''),
                 form_data.get('interface2_ip', ''),
                 form_data.get('interface2_mask', ''),
-                form_data.get('interface2_area', ''),
-                load_balancing))
+                form_data.get('interface2_area', '')))
         conn.commit()
 
 def fetch_all_configs():
@@ -75,7 +70,6 @@ def get_router_template_data(router):
     base_config = {
         'router': router,
         'next_router': get_next_router(router),
-        'show_load_balancing': router in ['R2', 'R4'],
         'fields': [
             {
                 'name': 'hostname', 
@@ -331,10 +325,6 @@ def configure_ospf(configs):
                     f" network {config['interface2_ip']} {config['interface2_mask']} "
                     f"area {config['interface2_area']}\n"
                 )
-            
-            # Add load balancing for R2 and R4
-            if config['load_balancing']:
-                ospf_config += " maximum-paths 2\n"
             
             print(f"  Loading configuration...")
             device.load_merge_candidate(config=ospf_config)

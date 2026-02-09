@@ -45,19 +45,6 @@
             </div>
             {% endfor %}
             
-            {% if show_load_balancing %}
-            <div>
-                <h3>Load Balancing</h3>
-                <div>
-                    <label>
-                        <input type="checkbox" name="load_balancing" checked>
-                        Enable OSPF Equal-Cost Load Balancing
-                    </label>
-                    <p>This router will balance traffic across multiple equal-cost paths.</p>
-                </div>
-            </div>
-            {% endif %}
-            
             <button type="submit">
                 {% if next_router %}
                     Next: Configure {{ next_router }}
