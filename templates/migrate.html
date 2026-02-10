@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Migration Results</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 100px auto;
+            padding: 20px;
+            text-align: center;
+            background-color: #f5f5f5;
+        }
+        .message-box {
+            background-color: white;
+            padding: 50px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .success {
+            color: #155724;
+            background-color: #d4edda;
+            border: 2px solid #28a745;
+        }
+        .error {
+            color: #721c24;
+            background-color: #f8d7da;
+            border: 2px solid #dc3545;
+        }
+        h1 {
+            font-size: 32px;
+            margin: 0;
+        }
+        .back-link {
+            display: inline-block;
+            margin-top: 30px;
+            padding: 12px 30px;
+            background-color: #4CAF50;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+        }
+        .back-link:hover {
+            background-color: #45a049;
+        }
+    </style>
+</head>
+<body>
+    {% if result.success %}
+        <div class="message-box success">
+            <h1>Migration completed successfully</h1>
+        </div>
+    {% else %}
+        <div class="message-box error">
+            <h1>Migration Failed</h1>
+            <p>{{ result.message }}</p>
+        </div>
+    {% endif %}
+    
+    <a href="/" class="back-link">← Back to Home</a>
+</body>
+</html>

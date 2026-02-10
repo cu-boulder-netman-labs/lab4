@@ -1,11 +1,177 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
-    <title>Diff config</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Configuration Diff Results</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+        rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            color: #e2e8f0;
+            min-height: 100vh;
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .container {
+            max-width: 800px;
+            width: 100%;
+        }
+
+        h1 {
+            font-size: 1.75rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(90deg, #38bdf8, #818cf8);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-align: center;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #94a3b8;
+            font-size: 0.9rem;
+            margin-bottom: 2rem;
+        }
+
+        .device {
+            background: rgba(30, 41, 59, 0.7);
+            border: 1px solid rgba(148, 163, 184, 0.12);
+            border-radius: 14px;
+            padding: 1.5rem;
+            margin-bottom: 1.25rem;
+            backdrop-filter: blur(8px);
+        }
+
+        .device-header {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #e2e8f0;
+            margin-bottom: 1rem;
+            padding-bottom: 0.75rem;
+            border-bottom: 1px solid rgba(148, 163, 184, 0.15);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .device-header::before {
+            content: "🖧";
+            font-size: 1.2rem;
+        }
+
+        .no-change {
+            color: #4ade80;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .error {
+            color: #f87171;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .diff-output {
+            font-family: 'JetBrains Mono', 'Courier New', monospace;
+            background: rgba(15, 23, 42, 0.6);
+            padding: 1rem;
+            border-radius: 8px;
+            border-left: 3px solid #818cf8;
+            overflow-x: auto;
+            white-space: pre-wrap;
+            font-size: 0.82rem;
+            line-height: 1.6;
+            color: #cbd5e1;
+        }
+
+        .diff-line-added {
+            background-color: rgba(74, 222, 128, 0.12);
+            color: #4ade80;
+        }
+
+        .diff-line-removed {
+            background-color: rgba(248, 113, 113, 0.12);
+            color: #f87171;
+        }
+
+        .diff-line-info {
+            background-color: rgba(56, 189, 248, 0.1);
+            color: #38bdf8;
+        }
+
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+            padding: 0.65rem 1.25rem;
+            background: rgba(56, 189, 248, 0.15);
+            color: #38bdf8;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            border: 1px solid rgba(56, 189, 248, 0.25);
+            transition: all 0.25s ease;
+        }
+
+        .back-link:hover {
+            background: rgba(56, 189, 248, 0.25);
+            transform: translateY(-2px);
+        }
+    </style>
 </head>
+
 <body>
-    <h1>Diff config</h1>
-    <p><a href="/">Go home</a></p>
+    <div class="container">
+        <h1>Configuration Diff Results</h1>
+        <p class="subtitle">Comparing running configurations against saved baselines</p>
+
+        {% for hostname, diff in diff_results %}
+        <div class="device">
+            <div class="device-header">{{ hostname }}</div>
+
+            {% if diff == "no changes" %}
+            <p class="no-change">✓ No changes detected</p>
+
+            {% elif diff == "invalid ip" %}
+            <p class="error">✗ Invalid IP address</p>
+
+            {% elif diff == "unreachable" %}
+            <p class="error">✗ Device unreachable</p>
+
+            {% elif "error:" in diff|string %}
+            <p class="error">✗ {{ diff }}</p>
+
+            {% else %}
+            <div class="diff-output">{{ diff | safe }}</div>
+            {% endif %}
+        </div>
+        {% endfor %}
+
+        <a href="/" class="back-link">← Back to Dashboard</a>
+    </div>
 </body>
+
 </html>

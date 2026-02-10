@@ -1,14 +1,132 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
-    <title>My Flask App</title>
-</head>
-<body>
-    <h1>Welcome to network dashboard!</h1>
-    <p><a href="/get_config">Get config</a></p>
-    <p><a href="/ospf_config">OSPF config</a></p>
-    <p><a href="/diff_config">Diff config</a></p>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Network Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            color: #e2e8f0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+        }
+
+        .dashboard {
+            max-width: 720px;
+            width: 100%;
+            text-align: center;
+        }
+
+        .dashboard h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(90deg, #38bdf8, #818cf8);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .subtitle {
+            color: #94a3b8;
+            font-size: 0.95rem;
+            margin-bottom: 2.5rem;
+        }
+
+        .nav-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1.25rem;
+        }
+
+        .nav-card {
+            background: rgba(30, 41, 59, 0.7);
+            border: 1px solid rgba(148, 163, 184, 0.12);
+            border-radius: 14px;
+            padding: 1.75rem 1.25rem;
+            text-decoration: none;
+            color: #e2e8f0;
+            transition: all 0.25s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.75rem;
+            backdrop-filter: blur(8px);
+        }
+
+        .nav-card:hover {
+            transform: translateY(-4px);
+            border-color: rgba(56, 189, 248, 0.4);
+            box-shadow: 0 8px 30px rgba(56, 189, 248, 0.12);
+            background: rgba(30, 41, 59, 0.9);
+        }
+
+        .nav-card .icon {
+            font-size: 2rem;
+        }
+
+        .nav-card .label {
+            font-weight: 600;
+            font-size: 1.05rem;
+        }
+
+        .nav-card .desc {
+            font-size: 0.8rem;
+            color: #94a3b8;
+            line-height: 1.4;
+        }
+
+        @media (max-width: 500px) {
+            .nav-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="dashboard">
+        <h1>Network Dashboard</h1>
+        <p class="subtitle">Manage your routers and configurations</p>
+
+        <div class="nav-grid">
+            <a href="/get_config" class="nav-card">
+                <span class="icon">📄</span>
+                <span class="label">Get Config</span>
+                <span class="desc">Retrieve running configurations</span>
+            </a>
+            <a href="/ospf_config" class="nav-card">
+                <span class="icon">🌐</span>
+                <span class="label">OSPF Config</span>
+                <span class="desc">Configure OSPF routing</span>
+            </a>
+            <a href="/diff_config" class="nav-card">
+                <span class="icon">🔍</span>
+                <span class="label">Diff Config</span>
+                <span class="desc">Compare configuration changes</span>
+            </a>
+            <a href="/migrate" class="nav-card">
+                <span class="icon">🚀</span>
+                <span class="label">Migrate R4</span>
+                <span class="desc">Migrate Router R4 to new config</span>
+            </a>
+        </div>
+    </div>
 </body>
+
 </html>

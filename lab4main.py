@@ -5,6 +5,8 @@ import threading
 import time
 import getconfig
 import ospfconfig
+import diffconfig
+import migration
 
 device_status = {}
 
@@ -67,7 +69,14 @@ def create_app():
 
     @app.route("/diff_config")
     def diff_config():
-        return render_template("diff_config.html")
+        diff_results = diffconfig.diff_config()
+        return render_template("diff_config.html", diff_results=diff_results)
+
+    @app.route("/migrate")
+    def migrate():
+        result = migration.migrate()
+        return render_template("migrate.html", result=result)
+
     return app
 
 
@@ -75,6 +84,5 @@ if __name__ == "__main__":
     hosts = sshInfo.load_ssh_info("config/sshInfo.json")
 
     ospfconfig.init_db()
-
     app = create_app()
     app.run(debug=True)
